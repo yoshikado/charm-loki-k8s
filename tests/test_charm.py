@@ -6,61 +6,43 @@
 import unittest
 from unittest.mock import Mock
 
-from charm import CharmLokiK8SCharm
+from charm import LokiCharm
 from ops.model import ActiveStatus
 from ops.testing import Harness
 
+CONFIG_PATH = "/etc/loki/local-config.yaml"
 
 class TestCharm(unittest.TestCase):
     def setUp(self):
-        self.harness = Harness(CharmLokiK8SCharm)
+        self.harness = Harness(LokiCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
 
-    def test_config_changed(self):
-        self.assertEqual(list(self.harness.charm._stored.things), [])
-        self.harness.update_config({"thing": "foo"})
-        self.assertEqual(list(self.harness.charm._stored.things), ["foo"])
-
-    def test_action(self):
-        # the harness doesn't (yet!) help much with actions themselves
-        action_event = Mock(params={"fail": ""})
-        self.harness.charm._on_fortune_action(action_event)
-
-        self.assertTrue(action_event.set_results.called)
-
-    def test_action_fail(self):
-        action_event = Mock(params={"fail": "fail this"})
-        self.harness.charm._on_fortune_action(action_event)
-
-        self.assertEqual(action_event.fail.call_args, [("fail this",)])
-
-    def test_httpbin_pebble_ready(self):
+    def test_loki_pebble_ready(self):
         # Check the initial Pebble plan is empty
-        initial_plan = self.harness.get_container_pebble_plan("httpbin")
+        initial_plan = self.harness.get_container_pebble_plan("loki")
         self.assertEqual(initial_plan.to_yaml(), "{}\n")
         # Expected plan after Pebble ready with default config
         expected_plan = {
             "services": {
-                "httpbin": {
+                "loki": {
                     "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
+                    "summary": "loki",
+                    "command": "/usr/bin/loki -target=all -config.file={}".format(CONFIG_PATH),
                     "startup": "enabled",
-                    "environment": {"thing": "🎁"},
                 }
             },
         }
-        # Get the httpbin container from the model
-        container = self.harness.model.unit.get_container("httpbin")
-        # Emit the PebbleReadyEvent carrying the httpbin container
-        self.harness.charm.on.httpbin_pebble_ready.emit(container)
+        # Get the loki container from the model
+        container = self.harness.model.unit.get_container("loki")
+        # Emit the PebbleReadyEvent carrying the loki container
+        self.harness.charm.on.loki_pebble_ready.emit(container)
         # Get the plan now we've run PebbleReady
-        updated_plan = self.harness.get_container_pebble_plan("httpbin").to_dict()
+        updated_plan = self.harness.get_container_pebble_plan("loki").to_dict()
         # Check we've got the plan we expected
         self.assertEqual(expected_plan, updated_plan)
         # Check the service was started
-        service = self.harness.model.unit.get_container("httpbin").get_service("httpbin")
+        service = self.harness.model.unit.get_container("loki").get_service("loki")
         self.assertTrue(service.is_running())
         # Ensure we set an ActiveStatus with no message
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
