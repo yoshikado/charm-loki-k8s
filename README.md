@@ -2,23 +2,31 @@
 
 ## Description
 
-TODO: Describe your charm in a few paragraphs of Markdown
+The [Loki](https://grafana.com/oss/loki/) operator provides a logging aggregation system.
 
 ## Usage
 
-TODO: Provide high-level usage, such as required config or relations
+The Loki operator may be deployed using the Juju command line via:
 
+```bash
+    juju deploy loki-k8s --resource loki-image=grafana/loki:2.3.0
+```
 
 ## Relations
 
-TODO: Provide any relations which are provided or required by your charm
+```bash
+    juju relate loki-k8s grafana-k8s
+```
 
 ## OCI Images
 
-TODO: Include a link to the default image your charm uses
+This charm defaults to the latest version of the [grafana/loki](https://hub.docker.com/r/grafana/loki) image.
 
-## Contributing
+## Roadmap to completion
 
-Please see the [Juju SDK docs](https://juju.is/docs/sdk) for guidelines
-on enhancements to this charm following best practice guidelines, and
-`CONTRIBUTING.md` for developer guidance.
+What is needed before this charm could be considered complete and production ready:
+
+1. Add storage
+2. Support Loki horizontally scalable with the microservice mode (querier, ingester, query-frontend, or distributor)
+3. Create charms for agents that aggregates logs, e.g. promtail, grafana-agent
+4. Support TLS termination
