@@ -14,6 +14,7 @@ develop a new k8s charm using the Operator Framework:
 
 import logging
 
+from charms.grafana_k8s.v0.grafana_source import GrafanaSourceConsumer
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
@@ -31,8 +32,23 @@ class LokiCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.loki_pebble_ready, self._on_loki_pebble_ready)
+
+        self._name = "loki"
+        self._port = 3100
+
         self._stored.set_default(things=[])
+
+        # Allows Grafana to add Loki data-source
+        self.grafana_source_consumer = GrafanaSourceConsumer(
+            charm=self,
+            name="grafana-source",
+            refresh_event=self.on.loki_pebble_ready,
+            source_type=self._name,
+            source_port=str(self._port),
+        )
+
+        # Event handlers
+        self.framework.observe(self.on.loki_pebble_ready, self._on_loki_pebble_ready)
 
     def _on_loki_pebble_ready(self, event):
         """Define and start a workload using the Pebble API."""

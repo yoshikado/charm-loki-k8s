@@ -14,9 +14,11 @@ containers:
   loki:
     resource: loki-image
 
+provides:
+  grafana-source:
+    interface: grafana_datasource
+
 resources:
   loki-image:
     type: oci-image
     description: OCI image for loki
-    auto-fetch: true
-    upstream-source: 'grafana/loki:latest'
